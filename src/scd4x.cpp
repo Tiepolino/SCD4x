@@ -40,7 +40,7 @@ SCD4x::SCD4x(uint8_t sensorType, TwoWire *wire) : _wire(wire) {
  * @return true       - On success
  * @return false      - On failure
  */
-bool DHT20::begin(uint8_t i2cAddress, uint8_t sda, uint8_t scl) {
+bool SCD4x::begin(uint8_t i2cAddress, uint8_t sda, uint8_t scl) {
   uint8_t cmd[3] = {0x71};                                                      // Get status command
   uint8_t result;
 
