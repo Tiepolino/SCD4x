@@ -26,7 +26,7 @@
 SCD4x::SCD4x(uint8_t sensorType, TwoWire *wire) : _wire(wire) {
   _co2 = 0;
   _temperature = 0.0;
-  _humidity = 0.0;
+  _humidity = 0;
   _sensorType = sensorType;
 }
 
@@ -57,9 +57,14 @@ bool DHT20::begin(uint8_t i2cAddress, uint8_t sda, uint8_t scl) {
 
   _wire->beginTransmission(_i2cAddress);                                        // Try sending to the i2c address
   result = _wire->endTransmission();                                            // Get the result from the sensor
-
   if (result != 0) {                                                            // Check if the sensor is there
     _lastError = SCD4x_ERROR_NOSENSOR;                                          // If not set lastError
+    return false;
+  }
+
+  // ---- Get the serial number from the sensor ----
+  result = _getSerialNumber();                                                  // Stop measurements before reading Serial Number
+  if (!result) {
     return false;
   }
 
