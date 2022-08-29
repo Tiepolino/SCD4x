@@ -6,7 +6,6 @@
 
 // ---- Sensor Settings ----
 #define SCD4x_I2C_ADDRESS                       0x62                            // Address of this sensor
-#define SCD4x_RETRIES                              3                            // Number of retries to wait for measurement
 #define SCD4x_MEASURETIME                        5E3                            // Time in ms to wait for a measurement to finish (5 sec.)
 #define SCD4x_MEASURETIME_LP                     3E5                            // Time in ms to wait for a measurment to finsih in LP mode (30 sec.)
 #define SCD4x_CRC_INIT                          0xFF                            // Init value for the CRC check
@@ -72,7 +71,7 @@ class SCD4x {
     bool stopMeasuring(void);                                                   // Stop measuring
     bool singleMeasurement(void);                                               // Perform a single measurement (SCD41 only)
     bool singleMeasurement_rht(void);                                           // Measure relative humidity and temperature once (SCD41 only)
-    bool readSensorData(void);                                                  // Read the data from the sensor
+    bool readSensorData(void);                                                  // Read the data from the sensor (and clears them if requested)
     uint16_t getCO2(void);                                                      // Returns the CO2 value from the last measurement
     float getTemperature(uint8_t scale = _CELCIUS);                             // Returns the Temperature from the last measurement in the selected scale
     uint8_t getHumidity(void);                                                  // Returns the Humidity from the last measurement

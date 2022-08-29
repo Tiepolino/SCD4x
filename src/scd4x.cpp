@@ -5,12 +5,14 @@
  *
  * Author				: Tiebolt van der Linden
  * Created			: 2022-07-08 / 17.48
- * Last Changed	: 2022-08-27 / 14.21
+ * Last Changed	: 2022-08-29 / 10.08
  *
  * ToDo
  *    
  * History
- *    20220827 - Bugfix in _writeData(cmd, data) function
+ *    20220829 - Updated comments and function descriptions
+ *    20220829 - Code tested
+ *    20220827 - Bugfix in _writeData(cmd, data) function, crc fixed.
  *    20220826 - Code completed
  *    20220825 - Building up class functions
  *		20220708 - Initial Version
@@ -44,7 +46,7 @@ bool SCD4x::begin(uint8_t i2cAddress, uint8_t sda, uint8_t scl) {
   uint8_t cmd[3] = {0x71};                                                      // Get status command
   uint8_t result;
 
-  while(millis() < 150);                                                        // Make sure the sensor is turned on at least 150ms
+  while(millis() < SCD4x_INIT_DELAY);                                           // Make sure the sensor is initialized
 
   // ---- Check if we need to setup I2C pins ----
   if ((sda < 0xff) && (scl < 0xff)) {
@@ -183,6 +185,12 @@ bool SCD4x::singleMeasurement_rht(void) {
   return _writeCommand(SCD4x_SINGLE_MEASUREMENT_RHT);                           // Issue the command. Data ready in 50 ms.
 }
 
+/**
+ * @brief Reads the measurement data from the sensor
+ * 
+ * @return true  - On success
+ * @return false - On failure (lastError will be set)
+ */
 bool SCD4x::readSensorData(void) {
   uint16_t buffer = 0;
 
@@ -222,10 +230,21 @@ bool SCD4x::readSensorData(void) {
   return true;
 }
 
+/**
+ * @brief Returns the measured CO2 value in ppm
+ * 
+ * @return uint16_t - The CO2 value in ppm
+ */
 uint16_t SCD4x::getCO2(void) {
   return _co2;
 }
 
+/**
+ * @brief Returns the temperature measured in the requested scale
+ * 
+ * @param scale  - Scale to be used with the temperature
+ * @return float - Temperature corrected for requested scale
+ */
 float SCD4x::getTemperature(uint8_t scale) {
   switch(scale) {
     case _CELCIUS :
@@ -242,6 +261,11 @@ float SCD4x::getTemperature(uint8_t scale) {
   return 0;
 }
 
+/**
+ * @brief Returns the measured humidity in % RH (Relative Humidity)
+ * 
+ * @return uint8_t - The relative humidity in %
+ */
 uint8_t SCD4x::getHumidity(void) {
   return _humidity;
 }
