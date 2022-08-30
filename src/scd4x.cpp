@@ -5,11 +5,12 @@
  *
  * Author				: Tiebolt van der Linden
  * Created			: 2022-07-08 / 17.48
- * Last Changed	: 2022-08-29 / 10.08
+ * Last Changed	: 2022-08-30 / 14.43
  *
  * ToDo
  *    
  * History
+ *    20220830 - Bugfix in forceRecalibration function, crc fixed
  *    20220829 - Updated comments and function descriptions
  *    20220829 - Code tested
  *    20220827 - Bugfix in _writeData(cmd, data) function, crc fixed.
@@ -18,7 +19,7 @@
  *		20220708 - Initial Version
  */
 
-#include "SCD4x.h"
+#include "scd4x.h"
 
 /**
  * @brief Construct a new SCD4x object
@@ -28,7 +29,7 @@
 SCD4x::SCD4x(uint8_t sensorType, TwoWire *wire) : _wire(wire) {
   _co2 = 0;
   _temperature = 0.0;
-  _humidity = 0;
+  _humidity = 0.0;
   _sensorType = sensorType;
 }
 
@@ -266,7 +267,7 @@ float SCD4x::getTemperature(uint8_t scale) {
  * 
  * @return uint8_t - The relative humidity in %
  */
-uint8_t SCD4x::getHumidity(void) {
+float SCD4x::getHumidity(void) {
   return _humidity;
 }
 
@@ -403,6 +404,7 @@ bool SCD4x::persistSettings(void) {
  */
 int16_t SCD4x::forceRecalibration(uint16_t concentration) {
   uint16_t correction = 0;
+  uint8_t buffer[2] = { 0x00 };
 
   _lastError = SCD4x_ERROR_NONE;
 
@@ -411,17 +413,21 @@ int16_t SCD4x::forceRecalibration(uint16_t concentration) {
     return false;
   }
 
-  if (!_writeCommand(SCD4x_PERFORM_FORCED_CALIBRATION)) return false;           // Initiate the forced calibration
+  if (!_writeCommand(SCD4x_PERFORM_FORCED_CALIBRATION, concentration)) {        // Initiate the forced calibration
+    return false;
+  }
   delay(400);                                                                   // Wait for calibration to be executed
 
   // --- Get the correction value ----
   _wire->requestFrom((uint8_t) _i2cAddress, (uint8_t) 3);                       // Request the result from the sensor
-  correction = ((uint16_t) _wire->read()) << 8;                                 // MSB
-  correction |= _wire->read();                                                  // LSB
-  if (_crc8((uint8_t *) &correction, 2) != _wire->read()) {                     // Check CRC
+  buffer[0] = _wire->read();                                                    // MSB
+  buffer[1] = _wire->read();                                                    // LSB
+  if (_crc8((uint8_t *) &buffer, 2) != _wire->read()) {                         // Check CRC
     _lastError = SCD4x_ERROR_CRC;
     return false;
   }
+
+  correction = (uint16_t) buffer[0] << 8 | buffer[1];                           // Convert to uint16_t value
 
   return (correction == 0xFFFF) ? correction : correction - 0x8000;             // Return correction or 0xFFFF on error
 }

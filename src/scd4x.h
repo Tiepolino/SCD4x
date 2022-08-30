@@ -74,7 +74,7 @@ class SCD4x {
     bool readSensorData(void);                                                  // Read the data from the sensor (and clears them if requested)
     uint16_t getCO2(void);                                                      // Returns the CO2 value from the last measurement
     float getTemperature(uint8_t scale = _CELCIUS);                             // Returns the Temperature from the last measurement in the selected scale
-    uint8_t getHumidity(void);                                                  // Returns the Humidity from the last measurement
+    float getHumidity(void);                                                    // Returns the Humidity from the last measurement
 
     // ---- Sensor settings -----
     bool setTempOffset(float toff);                                             // Set the temperature offset
@@ -105,8 +105,7 @@ class SCD4x {
     uint8_t _sensorType = SCD40;                                                // Sensor type, defaults to SCD4x
     uint8_t _lastError = SCD4x_ERROR_NONE;                                      // Clear the lastError status
     uint16_t _co2 = 0;                                                          // Variable for CO2
-    float _temperature = 0.0, _tempOffset = 0.0;                                // Variables for Temperature
-    uint8_t _humidity = 0, _humidOffset = 0;                                    // Variables for Humidity
+    float _temperature = 0.0, _tempOffset = 0.0, _humidity = 0.0;               // Variables for Temperature and Humidity
     bool _measuring = false, _lowPower = false;                                 // Status flags for measuring and low power mode
     uint8_t serialNumber[13] = { 0x00 };                                        // Sensors serial number
 
