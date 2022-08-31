@@ -5,9 +5,10 @@
  *
  * Author				: Tiebolt van der Linden
  * Created			: 2022-07-08 / 17.48
- * Last Changed	: 2022-08-30 / 14.43
+ * Last Changed	: 2022-08-30 / 21.43
  *
  * ToDo
+ *    Library has not been tested with a ESP32 nor a ESP8266
  *    
  * History
  *    20220830 - Bugfix in forceRecalibration function, crc fixed
@@ -195,7 +196,7 @@ bool SCD4x::singleMeasurement_rht(void) {
 bool SCD4x::readSensorData(void) {
   uint16_t buffer = 0;
 
-  _lastError = SCD4x_ERROR_NONE;
+  _lastError = SCD4x_ERROR_NONE;                                                // Just started, no errors
 
   // ---- Check if we have data available ----
   if(!dataReady()) {
@@ -217,13 +218,13 @@ bool SCD4x::readSensorData(void) {
 
     switch(step) {
       case 0:   // ---- CO2 ----
-          _co2 = buffer;
+          _co2 = buffer;                                                        // Store the CO2 measurement
           break;
       case 1:   // ---- Temperature ----
-          _temperature = -45 + (((float) buffer) * 175.0 / 65535.0);
+          _temperature = -45 + (((float) buffer) * 175.0 / 65535.0);            // Calculate and store the temperature measurement
           break;
       case 2:   // ---- Relative Humidity ----
-          _humidity = ((float) buffer) * 100.0 / 65535.0;
+          _humidity = ((float) buffer) * 100.0 / 65535.0;                       // Calculate and store the humidity measurement
           break;
     }
   }
@@ -249,13 +250,13 @@ uint16_t SCD4x::getCO2(void) {
 float SCD4x::getTemperature(uint8_t scale) {
   switch(scale) {
     case _CELCIUS :
-        return _temperature;
+        return _temperature;                                                    // Return the temperature in Celcius
         break;
     case _FAHRENHEIT :
-        return (_temperature * 1.8) + 32;
+        return (_temperature * 1.8) + 32;                                       // Return the temperature in Farenheit
         break;
     case _KELVIN :
-        return _temperature + 273.15;
+        return _temperature + 273.15;                                           // Return the temperature in Kelvin
         break;
   }
 
@@ -370,9 +371,9 @@ bool SCD4x::setAmbientPressure(uint16_t mbar) {
     return false;
   }
 
-  if (!_writeCommand(SCD4x_SET_SENSOR_ALTITUDE, mbar)) return false;
+  if (!_writeCommand(SCD4x_SET_SENSOR_ALTITUDE, mbar)) return false;            // Write the ambient pressure to the sensor
 
-  delay(1);
+  delay(1);                                                                     // Give the sensor some time to process
   return true;
 }
 
@@ -754,8 +755,6 @@ uint8_t SCD4x::_crc8(uint8_t *ptr, size_t size) {
     crc ^= *ptr++;
     for (uint8_t i = 0; i < 8; i++) {
       if (crc & 0x80) {
-        //crc <<= 1;
-        //crc ^= SCD4x_CRC_POLYNOMINAL;
         crc = (crc << 1) ^ SCD4x_CRC_POLYNOMINAL;
       } else {
         crc <<= 1;
