@@ -9,6 +9,7 @@
  *
  * ToDo
  *    Library has not been tested with a ESP32 nor a ESP8266
+ *    Implement way to calibrate the sensor output
  *    
  * History
  *    20220830 - Bugfix in forceRecalibration function, crc fixed
@@ -122,7 +123,6 @@ bool SCD4x::startMeasuring(bool lowPower) {
   result = _writeCommand(cmd);                                                  // Write the command to the sensor
   if (result) {
     _measuring = true;                                                          // We are now measuring
-    _lowPower = lowPower;                                                       // Store if we are operating in low power or not
   }
 
   return result;
@@ -142,7 +142,6 @@ bool SCD4x::stopMeasuring(void) {
   result = _writeCommand(SCD4x_STOP_MEASURING);                                 // Write the command to the sensor
   if (result) {
     _measuring = false;                                                         // We are no longer measuring
-    _lowPower = false;                                                          // Set the low power setting to the default
 
     // ---- Wait for 500 miliseconds ----
     unsigned long now = millis();
@@ -200,7 +199,7 @@ bool SCD4x::readSensorData(void) {
 
   // ---- Check if we have data available ----
   if(!dataReady()) {
-    _lastError = SCD4x_ERROR_MFAIL;
+    _lastError = SCD4x_ERROR_WAIT;
     return false;
   }
 
@@ -219,12 +218,15 @@ bool SCD4x::readSensorData(void) {
     switch(step) {
       case 0:   // ---- CO2 ----
           _co2 = buffer;                                                        // Store the CO2 measurement
+          _co2_valid = true;
           break;
       case 1:   // ---- Temperature ----
           _temperature = -45 + (((float) buffer) * 175.0 / 65535.0);            // Calculate and store the temperature measurement
+          _temp_valid = true;
           break;
       case 2:   // ---- Relative Humidity ----
           _humidity = ((float) buffer) * 100.0 / 65535.0;                       // Calculate and store the humidity measurement
+          _humid_valid = true;
           break;
     }
   }
@@ -238,6 +240,9 @@ bool SCD4x::readSensorData(void) {
  * @return uint16_t - The CO2 value in ppm
  */
 uint16_t SCD4x::getCO2(void) {
+  if (!_co2_valid) { _lastError = SCD4x_ERROR_VALUE_INVALID; }
+
+  _co2_valid = false;                                                           // The measurement just got used
   return _co2;
 }
 
@@ -248,6 +253,9 @@ uint16_t SCD4x::getCO2(void) {
  * @return float - Temperature corrected for requested scale
  */
 float SCD4x::getTemperature(uint8_t scale) {
+  if (_temp_valid) { _lastError = SCD4x_ERROR_VALUE_INVALID; }
+  _temp_valid = false;                                                          // The measurement just got used
+
   switch(scale) {
     case _CELCIUS :
         return _temperature;                                                    // Return the temperature in Celcius
@@ -269,6 +277,9 @@ float SCD4x::getTemperature(uint8_t scale) {
  * @return uint8_t - The relative humidity in %
  */
 float SCD4x::getHumidity(void) {
+  if (_humid_valid) { _lastError = SCD4x_ERROR_VALUE_INVALID; }
+
+  _humid_valid = false;                                                         // The measurement just got used
   return _humidity;
 }
 
@@ -748,7 +759,7 @@ uint8_t SCD4x::_hex2ascii(uint8_t value) {
  * @return uint8_t  - The calculated CRC8 value for this buffer
  */
 uint8_t SCD4x::_crc8(uint8_t *ptr, size_t size) {
-  uint8_t crc = SCD4x_CRC_INIT;                                                           // CRC base value
+  uint8_t crc = SCD4x_CRC_INIT;                                                 // CRC base value
 
   // ---- Calculate the CRC value  ----
   while (size--) {

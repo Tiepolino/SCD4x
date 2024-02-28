@@ -50,12 +50,13 @@
 #define SCD4x_ERROR_NONE                        0x00                            // No error
 #define SCD4x_ERROR_NOSENSOR                    0x01                            // Sensor not found
 #define SCD4x_ERROR_CRC                         0x02                            // CRC error
-#define SCD4x_ERROR_MFAIL                       0x03                            // Measurement failed
+#define SCD4x_ERROR_WAIT                        0x03                            // Measurement not ready
 #define SCD4x_ERROR_I2CWRITE                    0x04                            // I2C Write error
 #define SCD4x_ERROR_I2CREAD                     0x05                            // I2C Read error
 #define SCD4x_ERROR_VALUE_OOB                   0x06                            // Offset value is out of bounds
 #define SCD4x_ERROR_NOT_SUPPORTED               0x07                            // Function is not supported by this sensor
 #define SCD4x_ERROR_MEASURING                   0x08                            // Function not supported while sensor is measuring
+#define SCD4x_ERROR_VALUE_INVALID               0x09                            // The value is invalid, perform a measurement first
 
 class SCD4x {
   public:
@@ -89,6 +90,12 @@ class SCD4x {
     bool enableSelfCalibration(bool state);                                     // Enable self calibration for this sensor
     bool selfCalibrationEnabled(void);                                          // Returns the current self calibration state
 
+    // ---- Software calibration ----
+    bool tempCalibration(uint8_t tLow, float mtLow,                             // Set the two point lineair calibration for this sensor
+                         uint8_t tHigh, float mtHigh);
+    bool humidCalibration(uint8_t hLow, float mhLow,
+                          uint8_t hHigh, float mhHigh);
+
     // ---- Utility functions ----
     bool dataReady(void);                                                       // Check if the measurement is done
     char* getSerialNumber(void);                                                // Retrieves the stored sensor serial number
@@ -105,8 +112,10 @@ class SCD4x {
     uint8_t _sensorType = SCD40;                                                // Sensor type, defaults to SCD4x
     uint8_t _lastError = SCD4x_ERROR_NONE;                                      // Clear the lastError status
     uint16_t _co2 = 0;                                                          // Variable for CO2
-    float _temperature = 0.0, _tempOffset = 0.0, _humidity = 0.0;               // Variables for Temperature and Humidity
-    bool _measuring = false, _lowPower = false;                                 // Status flags for measuring and low power mode
+    float _temperature = 0.0, _humidity = 0.0;                                  // Variables for Temperature and Humidity
+    bool _co2_valid = false, _temp_valid = false, _humid_valid = false;         // Are the stored values valid or not
+    uint8_t tLow = 0, tHigh = 0;                                                // Temperatures to 
+    bool _measuring = false;                                                    // Status flag for measuring
     uint8_t serialNumber[13] = { 0x00 };                                        // Sensors serial number
 
     bool _getSerialNumber(void);                                                // Reads the sensors serial number
